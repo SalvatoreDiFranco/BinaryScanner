@@ -79,4 +79,4 @@ def check(binary_file):
 
 if __name__ == '__main__':
     suppress_angr_warnings()
-    check('/Users/salvo/PycharmProjects/BinaryScanner/test/fsb/no_fsb_vuln')
+    check('path_to_binary')
