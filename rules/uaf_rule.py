@@ -1,10 +1,14 @@
 import angr
 import logging
 
+
+# dizionario delle allocazioni --> key: indirizzo_allocato, value: # di byte allocati
 allocated_addrs = dict()
+# set (insieme) degli indirizzi deallocati
 deallocated_addrs = set()
 
 
+# Funzione per sopprimere i warning di angr
 def suppress_angr_warnings():
     logging.getLogger('angr').setLevel(logging.ERROR)
     logging.getLogger('cle').setLevel(logging.ERROR)
@@ -12,37 +16,43 @@ def suppress_angr_warnings():
     logging.getLogger('claripy').setLevel(logging.ERROR)
 
 
+# Classe che definisce gli hook per le malloc
 class HookMalloc(angr.SimProcedure):
     def run(self, size):
-        # Chiamata a malloc originale
+        # Chiamata a malloc di libc
         malloc = angr.SIM_PROCEDURES['libc']['malloc']
         result = self.inline_call(malloc, size).ret_expr
 
         addr = self.state.solver.eval(result)
         size = self.state.solver.eval(size)
         print(f"Hook malloc: allocated {size} bytes at address {hex(addr)}")
+
+        # Aggiunta al dizionario delle allocazioni
         allocated_addrs[addr] = size
 
         return result
 
 
+# Classe che definisce gli hook per le free
 class HookFree(angr.SimProcedure):
     def run(self, ptr):
-        # Chiamata a free originale
+        # Chiamata a free di libc
         free = angr.SIM_PROCEDURES['libc']['free']
         self.inline_call(free, ptr)
 
-        # Ottieni l'indirizzo del puntatore liberato
+        # Rimozione indirizzo dal dizionario delle allozazioni e aggiunta al set delle deallocazioni
         addr = self.state.solver.eval(ptr)
         if addr in allocated_addrs:
             del allocated_addrs[addr]
             deallocated_addrs.add(addr)
             print(f"Hook free: freed memory at address {hex(addr)}")
+        # Controllo presenza di double free
         elif addr in deallocated_addrs:
             print(f"Hook free: double free vulnerability detected at address {hex(addr)}")
         return
 
 
+# Funzione per hookare una malloc o una free
 def hook_symbol(project, symbol, myfunction):
     hooked_addrs = set()
     for sym in project.loader.symbols:
@@ -52,6 +62,7 @@ def hook_symbol(project, symbol, myfunction):
                 hooked_addrs.add(sym.rebased_addr)
 
 
+# Funzione invocata ad ogni breakpoint per rilevare una lettura o una scrittura attraverso un puntatore dandling
 def on_mem_access(state):
     addr = None
     write = True
@@ -73,22 +84,26 @@ def on_mem_access(state):
 
 
 def check(binary_path):
+    # Istruzioni per creare il progetto angr e lo stato iniziale della simulazione
     try:
         project = angr.Project(binary_path, load_options={'auto_load_libs': False})
     except:
         print("Path does not point to a valid binary file: " + binary_path + "\n")
         return
-
     init_state = project.factory.entry_state()
 
+    # Istruzioni per impostare breakpoint di simulazione sulle azioni di lettura o scrittura in memoria
     init_state.inspect.b('mem_read', action=on_mem_access)
     init_state.inspect.b('mem_write', action=on_mem_access)
 
+    # Istruzioni per hookare malloc e free
     hook_symbol(project, 'malloc', HookMalloc())
     hook_symbol(project, 'free', HookFree())
 
+    # Istruzioni per creare il simulation manager e avviare l'esecuzione simbolica
     simgr = project.factory.simulation_manager(init_state)
 
+    # simgr.run()
     while len(simgr.active) > 0:
         simgr.step()
 

@@ -3,7 +3,7 @@ from angr import SimProcedure
 import re
 import logging
 
-
+# Funzione per sopprimere i warnings automatici dell'esecuzione simbolica
 def suppress_angr_warnings():
     logging.getLogger('angr').setLevel(logging.ERROR)
     logging.getLogger('cle').setLevel(logging.ERROR)
@@ -11,6 +11,13 @@ def suppress_angr_warnings():
     logging.getLogger('claripy').setLevel(logging.ERROR)
 
 
+# Funzione di debug per controllare quali funzioni sono state hookate con successo
+def hooked_functions(project):
+    for sym in project.loader.symbols:
+        print(f"Symbol: {sym.name}, Hooked: {project.is_symbol_hooked(sym.rebased_addr)}")
+
+
+# Sottoclasse di SimProcedure che ridefinisce il comportamento delle funzioni di input
 class MyInputFunction(SimProcedure):
     def run(self, dst):
         input_size = 50
@@ -20,6 +27,7 @@ class MyInputFunction(SimProcedure):
         return input_size
 
 
+# Sottoclasse di SimProcedure che ridefinisce il comportamento delle funzioni vulnerabili
 class MyVulFunction(SimProcedure):
     def checkFSB(self):
         fmt_str = self.state.memory.load(self.state.solver.eval(self.arguments[0]), size=bits)
@@ -29,12 +37,13 @@ class MyVulFunction(SimProcedure):
 
     def run(self, fmt):
         if self.checkFSB():
-            print("Vulnerable function found")
+            print("Format String Bug found!")
             return 0
         else:
-            print("Vulnerable function NOT found!")
+            print("Format String Bug NOT found!")
 
 
+# Funzione per hookare le funzioni vulnerabili
 def hook_vuln_functions(project):
     flag = False
     for vulfunc_sym in project.loader.symbols:
@@ -44,6 +53,7 @@ def hook_vuln_functions(project):
     return flag
 
 
+# Funzione per hookare le funzioni di input
 def hook_input_functions(project):
     for infunc_sym in project.loader.symbols:
         pattern = re.compile(r'get|scan|read')
@@ -52,12 +62,8 @@ def hook_input_functions(project):
     return
 
 
-def hooked_functions(project):
-    for sym in project.loader.symbols:
-        print(f"Symbol: {sym.name}, Hooked: {project.is_symbol_hooked(sym.rebased_addr)}")
-
-
 def check(binary_file):
+    # Codice per creare il progetto angr, il simulation manager e hookare funzioni di input e vulnerabili
     try:
         project = angr.Project(binary_file, load_options={'auto_load_libs': False})
     except:
@@ -74,6 +80,8 @@ def check(binary_file):
     state = project.factory.entry_state()
     simgr = project.factory.simulation_manager(state)
     simgr.use_technique(angr.exploration_techniques.DFS())
+
+    # Istruzione per avviare l'esecuzione simbolica
     simgr.run()
 
 

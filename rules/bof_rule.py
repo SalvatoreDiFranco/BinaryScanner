@@ -24,11 +24,13 @@ def checkWriteStackMem(cur_state: angr.SimState):
     return False
 
 
-def check(file_name):
-    print("Checking Buffer overflow")
-
+def check(binary_file):
     # Codice per creare il progetto angr e il simulation manager
-    project = angr.Project(file_name, auto_load_libs=False)
+    try:
+        project = angr.Project(binary_file, auto_load_libs=False)
+    except:
+        print("Path does not point to a valid binary file: " + binary_file + "\n")
+        return
     extra_option = {sim_options.REVERSE_MEMORY_NAME_MAP,
                     sim_options.TRACK_MEMORY_ACTIONS,
                     sim_options.TRACK_MEMORY_MAPPING,
