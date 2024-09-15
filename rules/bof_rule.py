@@ -51,8 +51,7 @@ def check(binary_file):
                 simgr.step('symbolic_writed_stack')
                 if simgr.unconstrained:
                     # Per ogni stato non vincolato, se il valore del program counter è simbolico
-                    # (= potenzialmente uguale a 0x43434343) allora ho uno stato che potenzialmente
-                    # segnala un buffer overflow sullo stack
+                    #  allora ho uno stato che potenzialmente segnala un buffer overflow sullo stack
                     for unconstrained_state in simgr.unconstrained:
                             print("Buffer Overflow detected!")
                     return
