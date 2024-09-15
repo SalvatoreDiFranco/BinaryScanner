@@ -54,11 +54,7 @@ def check(binary_file):
                     # (= potenzialmente uguale a 0x43434343) allora ho uno stato che potenzialmente
                     # segnala un buffer overflow sullo stack
                     for unconstrained_state in simgr.unconstrained:
-                        if unconstrained_state.satisfiable(extra_constraints=[unconstrained_state.regs.pc == 0x43434343]):
                             print("Buffer Overflow detected!")
-                            #print("Buffer pointer at overflow:", hex(unconstrained_state.callstack.current_stack_pointer))
-                            #print("Payload causing overflow:", unconstrained_state.posix.dumps(0))
-                            print("Memory consumed: %.4f MB" % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024))
                     return
         simgr.step('active')
 

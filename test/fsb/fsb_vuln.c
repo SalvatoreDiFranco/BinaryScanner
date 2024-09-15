@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[]) {
     char str[20];
-    gets(str);
-    printf(argv[1]);
+    fgets(str, sizeof(str), stdin);  // Uso di fgets per evitare buffer overflow
+    printf(argv[1]);  // Vulnerabilità di Format String Bug
     return 0;
 }
