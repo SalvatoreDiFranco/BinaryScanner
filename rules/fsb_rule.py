@@ -37,10 +37,10 @@ class MyVulFunction(SimProcedure):
 
     def run(self, fmt):
         if self.checkFSB():
-            print("Format String Bug found!")
-            return 0
+            print("An insecure format function has been called during simulation: Format String Bug found!")
         else:
-            print("Format String Bug NOT found!")
+            print("A secure format function has been called during simulation")
+        return 0
 
 
 # Funzione per hookare le funzioni vulnerabili
@@ -87,4 +87,4 @@ def check(binary_file):
 
 if __name__ == '__main__':
     suppress_angr_warnings()
-    check('path_to_binary')
+    check('/Users/salvo/PycharmProjects/BinaryScanner/test/fsb/complex_fsb')
