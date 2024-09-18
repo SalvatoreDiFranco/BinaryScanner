@@ -25,6 +25,7 @@ def checkWriteStackMem(cur_state: angr.SimState):
 
 
 def check(binary_file):
+    suppress_angr_warnings()
     # Codice per creare il progetto angr e il simulation manager
     try:
         project = angr.Project(binary_file, auto_load_libs=False)
@@ -53,7 +54,9 @@ def check(binary_file):
                     # Per ogni stato non vincolato, se il valore del program counter è simbolico
                     #  allora ho uno stato che potenzialmente segnala un buffer overflow sullo stack
                     for unconstrained_state in simgr.unconstrained:
-                            print("Buffer Overflow detected!")
+                            print(f"Buffer Overflow detected: {len(simgr.unconstrained)} unconstrained state has been found!")
+                            program_counter = unconstrained_state.ip
+                            print(f"Program counter type: {type(program_counter)}")
                     return
         simgr.step('active')
 
@@ -61,5 +64,4 @@ def check(binary_file):
 
 
 if __name__ == '__main__':
-    suppress_angr_warnings()
     check('path_to_binary')

@@ -25,7 +25,7 @@ class HookMalloc(angr.SimProcedure):
 
         addr = self.state.solver.eval(result)
         size = self.state.solver.eval(size)
-        print(f"Hook malloc: allocated {size} bytes at address {hex(addr)}")
+        print(f"Hook malloc: a malloc function has been called")
 
         # Aggiunta al dizionario delle allocazioni
         allocated_addrs[addr] = size
@@ -45,10 +45,10 @@ class HookFree(angr.SimProcedure):
         if addr in allocated_addrs:
             del allocated_addrs[addr]
             deallocated_addrs.add(addr)
-            print(f"Hook free: freed memory at address {hex(addr)}")
+            print(f"Hook free: a free function has been called")
         # Controllo presenza di double free
         elif addr in deallocated_addrs:
-            print(f"Hook free: double free vulnerability detected at address {hex(addr)}")
+            print(f"Double Free detected: the free function has been called on a deallocated address!")
         return
 
 
@@ -76,15 +76,16 @@ def on_mem_access(state):
     for deallocation in deallocated_addrs:
         if deallocation == addr_val:
             if write:
-                print(f'Use after free detected: writing on the deallocated address {hex(addr_val)}')
+                print(f'Use after free detected: writing on a deallocated address!\n')
                 exit(0)
             else:
-                print(f'Use after free detected: reading on the deallocated address {hex(addr_val)}')
+                print(f'Use after free detected: reading on a deallocated address!\n')
                 exit(0)
 
 
 def check(binary_path):
     # Istruzioni per creare il progetto angr e lo stato iniziale della simulazione
+    suppress_angr_warnings()
     try:
         project = angr.Project(binary_path, load_options={'auto_load_libs': False})
     except:
@@ -109,5 +110,4 @@ def check(binary_path):
 
 
 if __name__ == '__main__':
-    suppress_angr_warnings()
     check('path_to_binary')

@@ -64,6 +64,7 @@ def hook_input_functions(project):
 
 def check(binary_file):
     # Codice per creare il progetto angr, il simulation manager e hookare funzioni di input e vulnerabili
+    suppress_angr_warnings()
     try:
         project = angr.Project(binary_file, load_options={'auto_load_libs': False})
     except:
@@ -86,5 +87,4 @@ def check(binary_file):
 
 
 if __name__ == '__main__':
-    suppress_angr_warnings()
-    check('/Users/salvo/PycharmProjects/BinaryScanner/test/fsb/complex_fsb')
+    check('path_to_binary')
